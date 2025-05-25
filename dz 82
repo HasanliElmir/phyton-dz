@@ -1,0 +1,47 @@
+import sqlite3
+import requests
+from bs4 import BeautifulSoup
+
+
+def get_urls():
+    conn = sqlite3.connect('links.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT url FROM websites')
+    urls = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return urls
+
+
+def search_in_page(url, query):
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            text = soup.get_text().lower()
+            return query.lower() in text
+    except:
+        pass
+    return False
+
+
+def main():
+    query = input("Что вы хотите найти? ")
+
+    urls = get_urls()
+    found = []
+
+    for url in urls:
+        print(f'Проверка: {url}')
+        if search_in_page(url, query):
+            print(f'✅ Найдено на: {url}')
+            found.append(url)
+
+    if not found:
+        print("❌ Ничего не найдено.")
+    else:
+        print("\nСсылки, где найдена информация:")
+        for u in found:
+            print(u)
+
+if __name__ == "__main__":
+    main()
